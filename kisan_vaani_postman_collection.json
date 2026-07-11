@@ -1,0 +1,121 @@
+{
+  "info": {
+    "name": "Kisan Vaani - Sarvam APIs",
+    "description": "Day-1 hands-on collection. Set the collection variable sarvam_api_key first (Collection > Variables). Run requests 1-4 in order. Request 5 (Twilio) is the optional bonus for Day 5.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "sarvam_api_key", "value": "PASTE_YOUR_SARVAM_KEY_HERE" },
+    { "key": "twilio_account_sid", "value": "PASTE_TWILIO_SID_HERE" },
+    { "key": "twilio_auth_token", "value": "PASTE_TWILIO_TOKEN_HERE" },
+    { "key": "twilio_from_number", "value": "+1XXXXXXXXXX" },
+    { "key": "friend_number", "value": "+91XXXXXXXXXX" },
+    { "key": "audio_url", "value": "https://PASTE_PUBLIC_AUDIO_URL.wav" }
+  ],
+  "item": [
+    {
+      "name": "1 - Sarvam LLM (compose advisory)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "api-subscription-key", "value": "{{sarvam_api_key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "https://api.sarvam.ai/v1/chat/completions",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"model\": \"sarvam-105b\",\n  \"temperature\": 0.4,\n  \"max_tokens\": 300,\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are Kisan Vaani, a farm advisory assistant. You receive one FARMER, their WEATHER (rain total next 48h in mm, max temp in C), and a RULES table. Step 1: classify HEAVY_RAIN if rain >= 20, HOT_DRY if rain < 2 and max temp >= 34, else NORMAL. Step 2: find the single rule matching the farmer's crop and condition. Step 3: write the advisory in ENGLISH under 320 characters, warm spoken style: greet by name, one plain sentence on the weather outlook, then advice using ONLY the matched rule's advisory_text (rephrase naturally, never invent guidance), close with 'This is your Kisan Vaani update.' OUTPUT FORMAT exactly: first line 'RULE: <rule_id>', blank line, then the message. No markdown, no emojis.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"FARMER: Shivanna, Karnataka, Mandya, crop ragi. WEATHER: rain next 48h = 32 mm, max temp = 29 C. RULES: [{\\\"rule_id\\\":\\\"R1\\\",\\\"crop\\\":\\\"ragi\\\",\\\"condition\\\":\\\"HEAVY_RAIN\\\",\\\"advisory_text\\\":\\\"Heavy rain is expected. Clear your field drainage channels, postpone fertilizer top-dressing and all spraying until the field dries, and support young plants if winds pick up.\\\"},{\\\"rule_id\\\":\\\"R2\\\",\\\"crop\\\":\\\"ragi\\\",\\\"condition\\\":\\\"HOT_DRY\\\",\\\"advisory_text\\\":\\\"A hot dry spell is ahead. Give light irrigation in the early morning or evening, spread mulch, avoid midday field work.\\\"},{\\\"rule_id\\\":\\\"R3\\\",\\\"crop\\\":\\\"ragi\\\",\\\"condition\\\":\\\"NORMAL\\\",\\\"advisory_text\\\":\\\"Weather is stable. Good window for weeding and scheduled top-dressing. Check for blast disease.\\\"}]\"\n    }\n  ]\n}"
+        }
+      }
+    },
+    {
+      "name": "2 - Sarvam Translate (EN to Kannada)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "api-subscription-key", "value": "{{sarvam_api_key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "https://api.sarvam.ai/translate",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"input\": \"Namaskara Shivanna. Heavy rain is expected in Mandya over the next two days. Please clear your field drainage channels and postpone fertilizer and spraying until the field dries. This is your Kisan Vaani update.\",\n  \"source_language_code\": \"en-IN\",\n  \"target_language_code\": \"kn-IN\",\n  \"model\": \"mayura:v1\"\n}"
+        }
+      }
+    },
+    {
+      "name": "2b - Sarvam Translate (EN to Marathi)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "api-subscription-key", "value": "{{sarvam_api_key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "https://api.sarvam.ai/translate",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"input\": \"Namaskar Dnyaneshwar. The weather in Latur is stable for the next two days. Continue scheduled weeding and scout the field for girdle beetle. This is your Kisan Vaani update.\",\n  \"source_language_code\": \"en-IN\",\n  \"target_language_code\": \"mr-IN\",\n  \"model\": \"mayura:v1\"\n}"
+        }
+      }
+    },
+    {
+      "name": "3 - Sarvam TTS (Kannada voice note)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "api-subscription-key", "value": "{{sarvam_api_key}}" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "url": "https://api.sarvam.ai/text-to-speech",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"text\": \"PASTE_THE_translated_text_FROM_REQUEST_2_HERE\",\n  \"target_language_code\": \"kn-IN\",\n  \"model\": \"bulbul:v3\",\n  \"speaker\": \"priya\",\n  \"pace\": 0.95\n}"
+        }
+      },
+      "description": "Response contains audios[0] = base64 WAV text. Paste the whole response into tts_player.html to hear it."
+    },
+    {
+      "name": "4 - Sarvam STT (transcribe your memo)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "api-subscription-key", "value": "{{sarvam_api_key}}" }
+        ],
+        "url": "https://api.sarvam.ai/speech-to-text",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "file", "type": "file", "src": "" },
+            { "key": "model", "value": "saaras:v3", "type": "text" },
+            { "key": "mode", "value": "transcribe", "type": "text" }
+          ]
+        }
+      },
+      "description": "Click 'file' > Select Files > pick your recorded memo (wav or mp3, under 25 seconds). Response field: transcript. If the API rejects a field name, ask Claude to check docs.sarvam.ai and fix this request."
+    },
+    {
+      "name": "5 - BONUS Twilio call (plays advisory to a friend)",
+      "request": {
+        "auth": {
+          "type": "basic",
+          "basic": [
+            { "key": "username", "value": "{{twilio_account_sid}}" },
+            { "key": "password", "value": "{{twilio_auth_token}}" }
+          ]
+        },
+        "method": "POST",
+        "url": "https://api.twilio.com/2010-04-01/Accounts/{{twilio_account_sid}}/Calls.json",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            { "key": "To", "value": "{{friend_number}}" },
+            { "key": "From", "value": "{{twilio_from_number}}" },
+            { "key": "Twiml", "value": "<Response><Play>{{audio_url}}</Play></Response>" },
+            { "key": "Record", "value": "true" }
+          ]
+        }
+      },
+      "description": "Day-5 bonus only. friend_number must be a Verified Caller ID on your Twilio trial, India must be enabled in Voice Geo Permissions, and audio_url must be a public link to one generated WAV (upload it as a Twilio Asset)."
+    }
+  ]
+}

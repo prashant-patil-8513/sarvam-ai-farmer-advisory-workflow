@@ -1,0 +1,585 @@
+{
+  "name": "Kisan Vaani A - Daily Advisory",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 7 * * *"
+            }
+          ]
+        }
+      },
+      "name": "Every day 7 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        240,
+        208
+      ],
+      "id": "dc6a7c6e-2480-483f-b101-1dd12b8a0ba1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1bf8DsQa0Mg3vAmDk3C9ro0LvyFK_lEdg2suaYS4Xu9w/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 812026459,
+          "mode": "list",
+          "cachedResultName": "Advisory_Rules",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1bf8DsQa0Mg3vAmDk3C9ro0LvyFK_lEdg2suaYS4Xu9w/edit#gid=812026459"
+        },
+        "options": {}
+      },
+      "name": "Get Advisory Rules",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        208
+      ],
+      "id": "b1f36db7-8f25-45e5-8642-445ebb8c25a8",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zyLOZ1NSQLjieSxQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1bf8DsQa0Mg3vAmDk3C9ro0LvyFK_lEdg2suaYS4Xu9w/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Farmers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1bf8DsQa0Mg3vAmDk3C9ro0LvyFK_lEdg2suaYS4Xu9w/edit#gid=0"
+        },
+        "options": {}
+      },
+      "name": "Get Farmers",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        640,
+        208
+      ],
+      "id": "b21f6316-a647-4e64-8791-61c021660bbe",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zyLOZ1NSQLjieSxQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Loop Farmers",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        848,
+        208
+      ],
+      "id": "619eaedb-2521-404d-a5e7-4fc874655e00"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.open-meteo.com/v1/forecast?latitude={{ $json.latitude }}&longitude={{ $json.longitude }}&daily=precipitation_sum,temperature_2m_max&forecast_days=2&timezone=auto",
+        "options": {}
+      },
+      "name": "Get Weather",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1072,
+        224
+      ],
+      "id": "e705c60b-60b2-42fa-b3c2-6302bd984da9",
+      "retryOnFail": true
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'sarvam-105b', temperature: 0.4, max_tokens: 2000, messages: [ { role: 'system', content: \"You are Kisan Vaani, a farm advisory assistant. You receive one FARMER, their WEATHER (rain total next 48h in mm, max temp in C), and a RULES table. Step 1: classify HEAVY_RAIN if rain >= 20, HOT_DRY if rain < 2 and max temp >= 34, else NORMAL. Step 2: find the single rule matching the farmer's crop and condition. Step 3: write the advisory in ENGLISH under 320 characters, warm spoken style: greet by name, one plain sentence on the weather outlook, then advice using ONLY the matched rule's advisory_text (rephrase naturally, never invent guidance), close with 'This is your Kisan Vaani update.' OUTPUT FORMAT exactly: first line 'RULE: <rule_id>', blank line, then the message. No markdown, no emojis.\" }, { role: 'user', content: 'FARMER: ' + $('Loop Farmers').item.json.name + ', ' + $('Loop Farmers').item.json.state + ', ' + $('Loop Farmers').item.json.district + ', crop ' + $('Loop Farmers').item.json.crop + '. WEATHER: rain next 48h = ' + ($json.daily.precipitation_sum[0] + $json.daily.precipitation_sum[1]).toFixed(1) + ' mm, max temp = ' + Math.max($json.daily.temperature_2m_max[0], $json.daily.temperature_2m_max[1]).toFixed(1) + ' C. RULES: ' + JSON.stringify($('Get Advisory Rules').all().map(i => i.json)) } ] }) }}",
+        "options": {}
+      },
+      "name": "Compose Advisory",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1264,
+        224
+      ],
+      "id": "668b5b14-a38a-4ca4-9563-b8084d0d62c1",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "z9BR0Lzvxplh6aq5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/translate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ input: $json.choices[0].message.content.split('\\n').slice(1).join(' ').trim(), source_language_code: 'en-IN', target_language_code: $('Loop Farmers').item.json.language_code, model: 'mayura:v1' }) }}",
+        "options": {}
+      },
+      "name": "Translate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1472,
+        224
+      ],
+      "id": "fdebb777-39ec-4c6b-bb2d-4bda89fc798a",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "z9BR0Lzvxplh6aq5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/text-to-speech",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.translated_text, target_language_code: $('Loop Farmers').item.json.language_code, model: 'bulbul:v3', speaker: 'priya', pace: 0.95 }) }}",
+        "options": {}
+      },
+      "name": "Voice Note (TTS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1664,
+        224
+      ],
+      "id": "0f4f7653-096f-49f1-bce5-2779ddcba0f9",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "z9BR0Lzvxplh6aq5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "audios[0]",
+        "options": {
+          "fileName": "={{ $('Loop Farmers').item.json.farmer_id }}_advisory.wav",
+          "mimeType": "audio/wav"
+        }
+      },
+      "name": "Base64 to Audio File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1872,
+        224
+      ],
+      "id": "332f4794-9aba-41b9-80e1-c198d64ebc2b"
+    },
+    {
+      "parameters": {
+        "sendTo": "patilprashant422@gmail.com",
+        "subject": "=[SIMULATED {{ $('Loop Farmers').item.json.channel }} → {{ $('Loop Farmers').item.json.phone }}] Kisan Vaani: {{ $('Loop Farmers').item.json.crop }}, {{ $('Loop Farmers').item.json.district }}",
+        "message": "=Advisory (English draft):\n{{ $('Compose Advisory').item.json.choices[0].message.content }}\n\nDelivered text ({{ $('Loop Farmers').item.json.language_code }}):\n{{ $('Translate').item.json.translated_text }}",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "name": "Deliver (Demo Inbox)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2064,
+        224
+      ],
+      "id": "59301f02-b6ca-4290-ab82-4cfbd2063e33",
+      "webhookId": "29d4782a-93bd-4ca8-92eb-6b66a3e16d2b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xbbiTmEmzsn85v0A",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1bf8DsQa0Mg3vAmDk3C9ro0LvyFK_lEdg2suaYS4Xu9w/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Farmers"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "farmer_id": "={{ $('Loop Farmers').item.json.farmer_id }}",
+            "status": "SENT",
+            "last_rule": "={{ $('Compose Advisory').item.json.choices[0].message.content.split('\\n')[0].replace('RULE:','').trim() }}",
+            "last_sent": "={{ $now.toISO() }}",
+            "message_preview": "={{ $('Compose Advisory').item.json.choices[0].message.content.split('\\n').slice(1).join(' ').trim().slice(0, 90) }}",
+            "row_number": 0
+          },
+          "matchingColumns": [
+            "farmer_id"
+          ],
+          "schema": [
+            {
+              "id": "farmer_id",
+              "displayName": "farmer_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "name",
+              "displayName": "name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "state",
+              "displayName": "state",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "district",
+              "displayName": "district",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "latitude",
+              "displayName": "latitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "longitude",
+              "displayName": "longitude",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "crop",
+              "displayName": "crop",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "language_code",
+              "displayName": "language_code",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "phone",
+              "displayName": "phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "channel",
+              "displayName": "channel",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "notes",
+              "displayName": "notes",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_rule",
+              "displayName": "last_rule",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "last_sent",
+              "displayName": "last_sent",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "message_preview",
+              "displayName": "message_preview",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "name": "Log to Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        2272,
+        224
+      ],
+      "id": "19d13929-929f-4eeb-8435-0f252570b4d8",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zyLOZ1NSQLjieSxQ",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every day 7 AM": {
+      "main": [
+        [
+          {
+            "node": "Get Advisory Rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Advisory Rules": {
+      "main": [
+        [
+          {
+            "node": "Get Farmers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Farmers": {
+      "main": [
+        [
+          {
+            "node": "Loop Farmers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Farmers": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get Weather",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Weather": {
+      "main": [
+        [
+          {
+            "node": "Compose Advisory",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compose Advisory": {
+      "main": [
+        [
+          {
+            "node": "Translate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Translate": {
+      "main": [
+        [
+          {
+            "node": "Voice Note (TTS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice Note (TTS)": {
+      "main": [
+        [
+          {
+            "node": "Base64 to Audio File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base64 to Audio File": {
+      "main": [
+        [
+          {
+            "node": "Deliver (Demo Inbox)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deliver (Demo Inbox)": {
+      "main": [
+        [
+          {
+            "node": "Log to Sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Sheet": {
+      "main": [
+        [
+          {
+            "node": "Loop Farmers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "1aec2d66-3e88-4b71-aafb-fb8c8ad1d47d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "948d89115fac18c4ec5ff994545cb0e14ce9f894308c33efacf6780bb5e015b9"
+  },
+  "nodeGroups": [],
+  "id": "tVFbtRIJINFFnCgF",
+  "tags": []
+}

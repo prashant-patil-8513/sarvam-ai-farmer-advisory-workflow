@@ -1,0 +1,345 @@
+{
+  "name": "Kisan Vaani B - Campaign Broadcast (STT)",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Run Campaign",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        224,
+        208
+      ],
+      "id": "89915f08-5a9b-4c1a-b0cc-dc63a4741a8a"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "1Il_U1m1jiNyYuawxEO2P25zoFqMq8QVy",
+          "mode": "list",
+          "cachedResultName": "kisan_memo",
+          "cachedResultUrl": "https://drive.google.com/file/d/1Il_U1m1jiNyYuawxEO2P25zoFqMq8QVy/view?usp=drivesdk"
+        },
+        "options": {}
+      },
+      "name": "Download Memo",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        432,
+        208
+      ],
+      "id": "c944e504-19fa-41f9-9f8a-11214aa79fe1",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "vEx0Uy5y0yzWVMhI",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/speech-to-text",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "contentType": "multipart-form-data",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "parameterType": "formBinaryData",
+              "name": "file",
+              "inputDataFieldName": "data"
+            },
+            {
+              "name": "model",
+              "value": "saaras:v3"
+            },
+            {
+              "name": "mode",
+              "value": "transcribe"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "name": "Transcribe Memo (STT)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        624,
+        208
+      ],
+      "id": "9be8b4c8-b7d0-448b-a1ca-2c8d71022116",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "z9BR0Lzvxplh6aq5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1bf8DsQa0Mg3vAmDk3C9ro0LvyFK_lEdg2suaYS4Xu9w/edit?gid=0#gid=0",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Farmers",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1bf8DsQa0Mg3vAmDk3C9ro0LvyFK_lEdg2suaYS4Xu9w/edit#gid=0"
+        },
+        "options": {}
+      },
+      "name": "Get Farmers",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        832,
+        208
+      ],
+      "id": "72680cee-7ccd-48b2-abe2-8c6807f3f8a1",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "zyLOZ1NSQLjieSxQ",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "name": "Loop Farmers",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1024,
+        208
+      ],
+      "id": "11f1f90c-a965-461c-92c2-c0e155940ced"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/translate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ input: 'Namaskara ' + $json.name + '. ' + $('Transcribe Memo (STT)').first().json.transcript, source_language_code: 'en-IN', target_language_code: $json.language_code, model: 'mayura:v1' }) }}",
+        "options": {}
+      },
+      "name": "Translate",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1232,
+        224
+      ],
+      "id": "53a43dc4-7b67-4a4b-8478-e0dc21c20e7c",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "z9BR0Lzvxplh6aq5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.sarvam.ai/text-to-speech",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ text: $json.translated_text, target_language_code: $('Loop Farmers').item.json.language_code, model: 'bulbul:v3', speaker: 'priya', pace: 0.95 }) }}",
+        "options": {}
+      },
+      "name": "Voice Note (TTS)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1424,
+        224
+      ],
+      "id": "d2b8a388-fb3a-4bfd-a1f1-2dbdbdfe05e7",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "z9BR0Lzvxplh6aq5",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "audios[0]",
+        "options": {
+          "fileName": "={{ $('Loop Farmers').item.json.farmer_id }}_campaign.wav",
+          "mimeType": "audio/wav"
+        }
+      },
+      "name": "Base64 to Audio File",
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        1632,
+        224
+      ],
+      "id": "4741d9a0-37d8-4048-98a1-82e2d227bdc5"
+    },
+    {
+      "parameters": {
+        "sendTo": "patilprashant422@gmail.com",
+        "subject": "=[SIMULATED {{ $('Loop Farmers').item.json.channel }} → {{ $('Loop Farmers').item.json.phone }}] Kisan Vaani special message",
+        "message": "=Officer memo (transcribed by Sarvam STT):\n{{ $('Transcribe Memo (STT)').first().json.transcript }}\n\nDelivered text ({{ $('Loop Farmers').item.json.language_code }}):\n{{ $('Translate').item.json.translated_text }}",
+        "options": {
+          "attachmentsUi": {
+            "attachmentsBinary": [
+              {}
+            ]
+          }
+        }
+      },
+      "name": "Deliver (Demo Inbox)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1824,
+        224
+      ],
+      "id": "d5385da0-e31e-43a4-9579-8d2e59fb20d6",
+      "webhookId": "9b211dcf-b0b3-4856-9cd2-02618ae9c59e",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "xbbiTmEmzsn85v0A",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Run Campaign": {
+      "main": [
+        [
+          {
+            "node": "Download Memo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Memo": {
+      "main": [
+        [
+          {
+            "node": "Transcribe Memo (STT)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe Memo (STT)": {
+      "main": [
+        [
+          {
+            "node": "Get Farmers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Farmers": {
+      "main": [
+        [
+          {
+            "node": "Loop Farmers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Farmers": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Translate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Translate": {
+      "main": [
+        [
+          {
+            "node": "Voice Note (TTS)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Voice Note (TTS)": {
+      "main": [
+        [
+          {
+            "node": "Base64 to Audio File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Base64 to Audio File": {
+      "main": [
+        [
+          {
+            "node": "Deliver (Demo Inbox)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Deliver (Demo Inbox)": {
+      "main": [
+        [
+          {
+            "node": "Loop Farmers",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "163a06f5-2e62-4958-9aae-d82bde53a789",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "948d89115fac18c4ec5ff994545cb0e14ce9f894308c33efacf6780bb5e015b9"
+  },
+  "nodeGroups": [],
+  "id": "I2FexIkLCgWxOhM9",
+  "tags": []
+}

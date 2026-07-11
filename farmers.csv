@@ -1,0 +1,9 @@
+farmer_id,name,state,district,latitude,longitude,crop,language_code,phone,channel,notes,status,last_rule,last_sent,message_preview
+F01,Shivanna,Karnataka,Mandya,12.52,76.90,ragi,kn-IN,+919810000001,WHATSAPP,,PENDING,,,
+F02,Manjunath,Karnataka,Kalaburagi,17.33,76.83,tur,kn-IN,+919810000002,VOICE_CALL,Feature phone user,PENDING,,,
+F03,Savitri,Karnataka,Hassan,13.00,76.10,ragi,kn-IN,+919810000003,WHATSAPP,,PENDING,,,
+F04,Dnyaneshwar,Maharashtra,Latur,18.40,76.57,soybean,mr-IN,+919810000004,WHATSAPP,,PENDING,,,
+F05,Sunanda,Maharashtra,Yavatmal,20.39,78.13,cotton,mr-IN,+919810000005,VOICE_CALL,Feature phone user,PENDING,,,
+F06,Prakash,Maharashtra,Akola,20.70,77.00,soybean,mr-IN,+919810000006,WHATSAPP,,PENDING,,,
+F07,Sebastiao Fernandes,Goa,North Goa,15.55,73.83,paddy,mr-IN,+919810000007,WHATSAPP,Konkani speaker - Marathi voice fallback,PENDING,,,
+F08,Maria D'Souza,Goa,South Goa,15.20,74.12,paddy,mr-IN,+919810000008,VOICE_CALL,Konkani speaker - Marathi voice fallback,PENDING,,,

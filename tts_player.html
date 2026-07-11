@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kisan Vaani — Voice Note Player</title>
+<style>
+  :root{
+    --soil:#2e2418; --field:#4a6741; --wheat:#e8dcc4; --sun:#d4a017; --paper:#faf6ec;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family: Georgia, 'Times New Roman', serif;
+    background:var(--paper); color:var(--soil);
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  }
+  .card{
+    width:100%; max-width:640px; background:#fff;
+    border:2px solid var(--soil); border-radius:4px; padding:32px;
+    box-shadow:6px 6px 0 var(--field);
+  }
+  .eyebrow{
+    font-family:'Courier New', monospace; font-size:11px; letter-spacing:2px;
+    text-transform:uppercase; color:var(--field); margin-bottom:6px;
+  }
+  h1{font-size:26px; font-weight:normal; margin-bottom:4px;}
+  .sub{font-size:14px; color:#6b5d4a; margin-bottom:22px;}
+  label{
+    display:block; font-family:'Courier New', monospace; font-size:12px;
+    letter-spacing:1px; text-transform:uppercase; margin-bottom:8px; color:var(--soil);
+  }
+  textarea{
+    width:100%; height:150px; padding:12px; font-family:'Courier New', monospace;
+    font-size:12px; border:1.5px solid var(--soil); border-radius:3px;
+    background:var(--paper); resize:vertical;
+  }
+  textarea:focus{outline:3px solid var(--sun); outline-offset:1px;}
+  .row{display:flex; gap:12px; margin-top:16px; flex-wrap:wrap;}
+  button{
+    font-family:'Courier New', monospace; font-size:13px; letter-spacing:1px;
+    text-transform:uppercase; padding:12px 22px; cursor:pointer;
+    border:2px solid var(--soil); border-radius:3px; background:var(--field); color:#fff;
+  }
+  button:hover{background:var(--soil);}
+  button:focus-visible{outline:3px solid var(--sun); outline-offset:2px;}
+  button.ghost{background:#fff; color:var(--soil);}
+  #status{
+    margin-top:16px; font-family:'Courier New', monospace; font-size:12px;
+    padding:10px 12px; border-radius:3px; display:none;
+  }
+  #status.ok{display:block; background:#eef3ea; border:1px solid var(--field); color:var(--field);}
+  #status.err{display:block; background:#fbeeea; border:1px solid #a33; color:#a33;}
+  audio{width:100%; margin-top:18px; display:none;}
+</style>
+</head>
+<body>
+  <main class="card">
+    <p class="eyebrow">Kisan Vaani toolkit · 01</p>
+    <h1>Voice Note Player</h1>
+    <p class="sub">Paste the full JSON response from the Sarvam text-to-speech request (or just the base64 string inside <code>audios[0]</code>). Works offline — nothing leaves this page.</p>
+
+    <label for="input">TTS response or base64</label>
+    <textarea id="input" placeholder='{"request_id":"...","audios":["UklGRi..."]}' spellcheck="false"></textarea>
+
+    <div class="row">
+      <button onclick="playAudio()">Play voice note</button>
+      <button class="ghost" onclick="downloadAudio()">Download .wav</button>
+    </div>
+
+    <p id="status" role="status"></p>
+    <audio id="player" controls></audio>
+  </main>
+
+<script>
+let currentBlob = null;
+
+function extractBase64(raw){
+  raw = raw.trim();
+  if(!raw) throw new Error('Paste the TTS response first.');
+  if(raw.startsWith('{')){
+    let parsed;
+    try { parsed = JSON.parse(raw); }
+    catch(e){ throw new Error('That JSON did not parse — copy the whole response body again.'); }
+    if(parsed.audios && parsed.audios.length) return parsed.audios[0];
+    throw new Error('No "audios" field found — is this the text-to-speech response?');
+  }
+  return raw.replace(/^"+|"+$/g,'');
+}
+
+function toBlob(b64){
+  let bin;
+  try { bin = atob(b64.replace(/\s/g,'')); }
+  catch(e){ throw new Error('That is not valid base64 — copy the audios[0] value exactly.'); }
+  const bytes = new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
+  return new Blob([bytes],{type:'audio/wav'});
+}
+
+function prepare(){
+  const b64 = extractBase64(document.getElementById('input').value);
+  currentBlob = toBlob(b64);
+  return URL.createObjectURL(currentBlob);
+}
+
+function setStatus(msg, ok){
+  const s = document.getElementById('status');
+  s.textContent = msg; s.className = ok ? 'ok' : 'err';
+}
+
+function playAudio(){
+  try{
+    const url = prepare();
+    const p = document.getElementById('player');
+    p.src = url; p.style.display='block'; p.play();
+    setStatus('Playing — ' + Math.round(currentBlob.size/1024) + ' KB of audio decoded.', true);
+  }catch(e){ setStatus(e.message, false); }
+}
+
+function downloadAudio(){
+  try{
+    const url = prepare();
+    const a = document.createElement('a');
+    a.href = url; a.download = 'kisan_vaani_voice_note.wav'; a.click();
+    setStatus('Downloaded as kisan_vaani_voice_note.wav', true);
+  }catch(e){ setStatus(e.message, false); }
+}
+</script>
+</body>
+</html>
