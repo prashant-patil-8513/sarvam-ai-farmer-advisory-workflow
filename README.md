@@ -8,6 +8,8 @@
 
 Agri-input companies, FPOs, and state agriculture departments need to reach millions of farmers with time-critical guidance — spray windows, irrigation calls, weather warnings. Today that means mass SMS in English/Hindi (which many farmers can't read), or expensive field-officer visits and call-centre agents. Advice that arrives late, in the wrong language, or as unreadable text is advice wasted. The gap isn't knowing what to tell farmers — it's delivering it to each one, in time, in a form they can actually use. That form is **voice, in their mother tongue.**
 
+**Demo video:** https://www.loom.com/share/ff374d71e7204187850b56bd75ccdff7
+
 ## What this solution does
 
 Two n8n workflows share one localize-and-voice pipeline, driven two different ways.
